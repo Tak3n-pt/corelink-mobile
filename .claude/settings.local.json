@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\eletcron desk app\\src\\ui\\utils/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\backend-server/**)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(keytool:*)",
+      "Read(C:\\Users\\3440\\Desktop\\finalrezlt - Copy (3) - Copy\\eletcron desk app/**)",
+      "Bash(dir:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "my-app-new",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "prebuild:ios": "expo prebuild --platform ios --clean",
+    "build:ios:dev": "eas build --platform ios --profile development",
+    "build:ios:prod": "eas build --platform ios --profile production",
+    "submit:ios": "eas submit --platform ios",
+    "ios:simulator": "expo run:ios --device simulator"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/netinfo": "^11.4.1",
+    "@react-native-ml-kit/barcode-scanning": "^1.4.1",
+    "@react-native-ml-kit/text-recognition": "^1.5.2",
+    "cors": "^2.8.5",
+    "expo": "~53.0.22",
+    "expo-blur": "^14.1.5",
+    "expo-camera": "~16.1.11",
+    "expo-dev-client": "~5.2.4",
+    "expo-file-system": "^18.1.11",
+    "expo-haptics": "^14.1.4",
+    "expo-image-picker": "^16.1.4",
+    "expo-linear-gradient": "^14.1.5",
+    "expo-status-bar": "~2.2.3",
+    "express": "^5.1.0",
+    "i18next": "^23.8.2",
+    "i18next-react-native-async-storage": "^1.0.4",
+    "node-fetch": "^3.3.2",
+    "react": "19.0.0",
+    "react-i18next": "^14.0.5",
+    "react-native": "0.79.5",
+    "react-native-fs": "^2.20.0",
+    "react-native-udp": "^4.1.7",
+    "react-native-vision-camera": "^4.7.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@react-native-community/cli": "^20.0.1"
+  },
+  "private": true
+}

@@ -1,0 +1,6 @@
+{
+  "ios.deploymentTarget": "13.4",
+  "flipper_configuration": "FlipperConfiguration.disabled",
+  "expo.jsEngine": "hermes",
+  "use_frameworks": "static"
+}

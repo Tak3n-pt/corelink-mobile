@@ -1,0 +1,48 @@
+{
+  "description": "iOS App Icon Configuration for CoreLink",
+  "icons": {
+    "iphone": {
+      "app": {
+        "2x": "120x120",
+        "3x": "180x180"
+      },
+      "notification": {
+        "2x": "40x40",
+        "3x": "60x60"
+      },
+      "settings": {
+        "2x": "58x58",
+        "3x": "87x87"
+      },
+      "spotlight": {
+        "2x": "80x80",
+        "3x": "120x120"
+      }
+    },
+    "ipad": {
+      "app": {
+        "1x": "76x76",
+        "2x": "152x152"
+      },
+      "pro": {
+        "2x": "167x167"
+      },
+      "notification": {
+        "1x": "20x20",
+        "2x": "40x40"
+      },
+      "settings": {
+        "1x": "29x29",
+        "2x": "58x58"
+      },
+      "spotlight": {
+        "1x": "40x40",
+        "2x": "80x80"
+      }
+    },
+    "ios-marketing": {
+      "1x": "1024x1024"
+    }
+  },
+  "note": "The base icon.png file will be automatically resized by Expo to generate all required iOS icon sizes during build"
+}

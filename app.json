@@ -1,0 +1,126 @@
+{
+  "expo": {
+    "name": "CoreLink",
+    "slug": "corelink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "corelink",
+    "privacy": "unlisted",
+    "sdkVersion": "53.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "githubUrl": "",
+    "primaryColor": "#2196F3",
+    "backgroundColor": "#ffffff",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "enabled": false
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.corelink.inventory",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera to scan products",
+        "NSPhotoLibraryUsageDescription": "CoreLink needs access to your photo library to select invoice images for processing.",
+        "NSPhotoLibraryAddUsageDescription": "CoreLink needs permission to save processed images to your photo library.",
+        "NSLocationWhenInUseUsageDescription": "CoreLink uses your location to automatically detect nearby inventory servers.",
+        "NSLocalNetworkUsageDescription": "CoreLink needs to access your local network to connect to your inventory server.",
+        "NSBonjourServices": [
+          "_http._tcp",
+          "_https._tcp"
+        ],
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification",
+          "processing"
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "CoreLink",
+        "CFBundleShortVersionString": "1.0.0",
+        "UIRequiresFullScreen": true,
+        "UIStatusBarStyle": "UIStatusBarStyleDefault",
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "UILaunchStoryboardName": "SplashScreen",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
+        "LSRequiresIPhoneOS": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        }
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "requireFullScreen": true,
+      "userInterfaceStyle": "automatic",
+      "associatedDomains": [],
+      "usesAppleSignIn": false,
+      "usesIcloudStorage": false,
+      "accessesContactNotes": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.corelink.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-camera",
+      [
+        "expo-dev-client",
+        {
+          "addGeneratedScheme": false
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera to scan products",
+          "enableMicrophonePermission": false,
+          "enableCodeScanner": true
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3e559dc4-6948-4620-b562-08095c6093cf"
+      }
+    },
+    "owner": "tak3n"
+  }
+}
