@@ -1,0 +1,61 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Setup Expo
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Install iOS dependencies
+        working-directory: ios
+        run: pod install
+
+      - name: Build iOS App
+        working-directory: ios
+        run: |
+          xcodebuild -workspace CoreLink.xcworkspace \
+            -scheme CoreLink \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/CoreLink.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Create IPA
+        run: |
+          mkdir -p $RUNNER_TEMP/Payload
+          cp -r $RUNNER_TEMP/CoreLink.xcarchive/Products/Applications/CoreLink.app $RUNNER_TEMP/Payload/
+          cd $RUNNER_TEMP && zip -r CoreLink.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoreLink-iOS
+          path: ${{ runner.temp }}/CoreLink.ipa

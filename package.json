@@ -14,16 +14,22 @@
     "ios:simulator": "expo run:ios --device simulator"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-ml-kit/barcode-scanning": "^1.4.1",
     "@react-native-ml-kit/text-recognition": "^1.5.2",
+    "babel-preset-expo": "^54.0.7",
     "cors": "^2.8.5",
-    "expo": "~53.0.22",
+    "expo": "~53.0.0",
+    "expo-asset": "~11.1.7",
     "expo-blur": "^14.1.5",
+    "expo-build-properties": "~0.14.8",
     "expo-camera": "~16.1.11",
+    "expo-constants": "~17.1.7",
     "expo-dev-client": "~5.2.4",
     "expo-file-system": "^18.1.11",
+    "expo-font": "~13.3.2",
     "expo-haptics": "^14.1.4",
     "expo-image-picker": "^16.1.4",
     "expo-linear-gradient": "^14.1.5",
@@ -34,7 +40,7 @@
     "node-fetch": "^3.3.2",
     "react": "19.0.0",
     "react-i18next": "^14.0.5",
-    "react-native": "0.79.5",
+    "react-native": "0.79.6",
     "react-native-fs": "^2.20.0",
     "react-native-udp": "^4.1.7",
     "react-native-vision-camera": "^4.7.1",
@@ -42,6 +48,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@babel/plugin-transform-typescript": "^7.28.5",
     "@react-native-community/cli": "^20.0.1"
   },
   "private": true

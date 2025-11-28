@@ -67,10 +67,10 @@ import './i18n/i18n';
 // Using expo-camera native barcode scanning for better performance
 // No more dependencies, build issues, or memory leaks!
 
-// Server configurations - Fixed server for OCR, dynamic for desktop stocking
+// Server configurations - Using AWS Elastic Beanstalk for cloud backend
 const SERVER_CONFIGS = {
   LOCAL: 'http://192.168.1.14:3001',  // Local backend server for OCR
-  CLOUD: 'https://invoice-processor-dot-my-invoice-server-2025.uc.r.appspot.com'
+  CLOUD: 'https://api.evermart.pro'  // HTTPS via Cloudflare (proxied to AWS EB)
 };
 
 // Use CLOUD backend for invoice OCR (switched from LOCAL to online server)
@@ -142,91 +142,6 @@ export default function App() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [cameraPermission, setCameraPermission] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  
-  // Manual Desktop IP Configuration
-  const [manualDesktopIP, setManualDesktopIP] = useState('');
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
-  const [showNetworkTest, setShowNetworkTest] = useState(false);
-
-  // Load manual IP from storage on app start
-  useEffect(() => {
-    const loadManualIP = async () => {
-      try {
-        const savedIP = await AsyncStorage.getItem('manual_desktop_ip');
-        if (savedIP) {
-          setManualDesktopIP(savedIP);
-          console.log(`📱 [MANUAL] Loaded saved IP: ${savedIP}`);
-        }
-      } catch (error) {
-        console.log('⚠️ [MANUAL] Failed to load saved IP:', error.message);
-      }
-    };
-    loadManualIP();
-  }, []);
-
-  // Save manual IP to storage
-  const saveManualIP = async (ip) => {
-    try {
-      await AsyncStorage.setItem('manual_desktop_ip', ip);
-      setManualDesktopIP(ip);
-      console.log(`💾 [MANUAL] Saved IP: ${ip}`);
-    } catch (error) {
-      console.log('❌ [MANUAL] Failed to save IP:', error.message);
-    }
-  };
-
-  // Test connection to manual IP
-  const testManualConnection = async () => {
-    if (!manualDesktopIP.trim()) {
-      Alert.alert('Error', 'Please enter a desktop IP address');
-      return;
-    }
-
-    setIsTestingConnection(true);
-    try {
-      const url = `http://${manualDesktopIP.trim()}:4000/health`;
-      console.log(`🔍 [TEST] Testing connection to: ${url}`);
-      
-      // Use XMLHttpRequest instead of fetch for hotspot compatibility
-      const data = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.timeout = 10000;
-        
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const data = JSON.parse(xhr.responseText);
-              resolve(data);
-            } catch (e) {
-              reject(new Error('Invalid JSON response'));
-            }
-          } else {
-            reject(new Error(`Server responded with status: ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = function() {
-          reject(new Error('Network request failed'));
-        };
-        
-        xhr.ontimeout = function() {
-          reject(new Error('Request timed out'));
-        };
-        
-        xhr.send();
-      });
-      
-      Alert.alert('Success!', `Connected to desktop server!\nStatus: ${data.status}\nUptime: ${Math.round(data.uptime)}s`);
-      await saveManualIP(manualDesktopIP.trim());
-    } catch (error) {
-      console.log('❌ [TEST] Connection test failed:', error.message);
-      Alert.alert('Connection Failed', `Cannot connect to ${manualDesktopIP}:4000\n\nError: ${error.message}\n\nMake sure:\n• Desktop app is running\n• IP address is correct\n• Both devices on same network`);
-    } finally {
-      setIsTestingConnection(false);
-    }
-  };
   
   // Clear all app data function
   const clearAllAppData = async () => {
@@ -931,14 +846,9 @@ export default function App() {
   const processInvoiceImages = async (imageUris) => {
     console.log(`🔄 processInvoiceImages called with ${imageUris.length} image(s)`);
     
-    // Calculate the actual desktop URL to use - manual IP takes priority
+    // Use auto-discovered desktop URL
     let actualDesktopUrl = desktopServerUrl;
-    if (manualDesktopIP && manualDesktopIP.trim()) {
-      actualDesktopUrl = `http://${manualDesktopIP.trim()}:4000`;
-      console.log(`🎯 [MANUAL] processInvoiceImages using manual desktop IP: ${actualDesktopUrl}`);
-    } else {
-      console.log(`🔍 [AUTO] processInvoiceImages using discovered desktop: ${actualDesktopUrl || 'none'}`);
-    }
+    console.log(`🔍 [AUTO] processInvoiceImages using discovered desktop: ${actualDesktopUrl || 'none'}`);
     
     // Use simplified cloud processing
     return processInvoiceImages(imageUris, {
@@ -1288,46 +1198,39 @@ export default function App() {
   const searchProductByText = async (searchText) => {
     try {
       console.log(`🔍 Searching for product: "${searchText}"`);
-      
-      if (!desktopServerUrl) {
-        throw new Error('Desktop server not configured');
-      }
-      
-      const searchResponse = await fetchWithTimeout(`${desktopServerUrl}/api/products/search?q=${encodeURIComponent(searchText)}`, {}, 10000);
-      
-      if (searchResponse.ok) {
-        const searchResults = await searchResponse.json();
-        
-        if (searchResults.products && searchResults.products.length > 0) {
-          const product = searchResults.products[0];
-          console.log('📦 Product found:', product);
-          
-          // Close the text selector modal
-          setShowTextSelector(false);
-          setSearchProgress({ current: 0, total: 0, searching: false });
-          
-          // Show product popup
-          Alert.alert(
-            t('product.found'),
-            `📦 ${product.name || t('modals.unknownProduct')}\n\n` +
-            `💰 Price: ${product.price || product.selling_price || 0} DZD\n` +
-            `📊 Stock: ${product.quantity || 0} units\n` +
-            `🏷️ Barcode: ${product.barcode || t('common.notAvailable')}`,
-            [
-              { text: t('common.cancel'), style: 'cancel' },
-              { 
-                text: t('sale.sellOne'), 
-                onPress: () => sellProduct(
-                  product.barcode, 
-                  1, 
-                  product.price || product.selling_price || 0, 
-                  product.name
-                )
-              }
-            ]
-          );
-          return true;
-        }
+
+      // Use ConnectionManager for cloud relay + local fallback
+      const searchResults = await ConnectionManager.searchProduct(searchText);
+
+      if (searchResults && searchResults.length > 0) {
+        const product = searchResults[0];
+        console.log('📦 Product found via ConnectionManager:', product);
+
+        // Close the text selector modal
+        setShowTextSelector(false);
+        setSearchProgress({ current: 0, total: 0, searching: false });
+
+        // Show product popup
+        Alert.alert(
+          t('product.found'),
+          `📦 ${product.name || t('modals.unknownProduct')}\n\n` +
+          `💰 Price: ${product.price || product.selling_price || 0} DZD\n` +
+          `📊 Stock: ${product.quantity || 0} units\n` +
+          `🏷️ Barcode: ${product.barcode || t('common.notAvailable')}`,
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+              text: t('sale.sellOne'),
+              onPress: () => sellProduct(
+                product.barcode,
+                1,
+                product.price || product.selling_price || 0,
+                product.name
+              )
+            }
+          ]
+        );
+        return true;
       }
       return false;
     } catch (error) {
@@ -1523,75 +1426,47 @@ export default function App() {
       console.log('✅ Processing new barcode:', barcode);
       setIsProcessingBarcode(true);
       setLastProcessedBarcode(barcode);
-    
-    if (!desktopServerUrl) {
-      console.error('❌ TEST: No desktop server URL available');
-      setShowLiveScanner(false);
-      Alert.alert(
-        '❌ ' + t('common.error'),
-        t('desktop.notConnected'),
-        [
-          { 
-            text: t('common.ok'),
-            onPress: () => {
-              setLastProcessedBarcode(null);
-              setIsProcessingBarcode(false);
-            }
-          }
-        ]
-      );
-      return;
-    }
-    
-    console.log('🔵 TEST: Looking up product in desktop server...');
-    console.log('🔵 TEST: API URL:', `${desktopServerUrl}/products/${barcode}`);
-    
-    // Lookup product by barcode
+
+    console.log('🔵 Looking up product via ConnectionManager (cloud + local)...');
+
+    // Lookup product by barcode using ConnectionManager (cloud relay + local fallback)
     try {
-      const response = await fetchWithTimeout(`${desktopServerUrl}/products/${barcode}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      console.log('🔵 TEST: API Response status:', response.status);
-      if (response.ok) {
-        const product = await response.json();
-        console.log('✅ TEST: Product found in desktop database!');
-        console.log('🔵 TEST: Product details:', {
+      const product = await ConnectionManager.lookupProduct(barcode);
+
+      if (product) {
+        console.log('✅ Product found via ConnectionManager!');
+        console.log('🔵 Product details:', {
           name: product.name,
           price: product.price,
           quantity: product.quantity,
           barcode: barcode
         });
         product.barcode = barcode;
-        
+
         // Close scanner to show confirmation modal
-        console.log('🔵 TEST: Closing scanner, showing sale confirmation...');
+        console.log('🔵 Closing scanner, showing sale confirmation...');
         setShowLiveScanner(false);
-        
+
         // Save to mobile storage only (don't send to desktop yet)
         await saveBarcodeToRecentScansLocal(barcode, product.name);
-        
+
         // Show the new confirmation modal
         setPendingProduct(product);
         setShowSaleConfirmation(true);
-        console.log('✅ TEST: Sale confirmation modal should be visible now');
+        console.log('✅ Sale confirmation modal displayed');
         
         // Reset barcode processing states
         setLastProcessedBarcode(null);
         setIsProcessingBarcode(false);
       } else {
-        console.log('❌ TEST: Product not found in database, status:', response.status);
+        console.log('❌ Product not found in database (cloud or local)');
         setShowLiveScanner(false);
         Alert.alert(
-          t('selling.productNotFound'), 
+          t('selling.productNotFound'),
           t('selling.productNotFoundDetails', { barcode }),
           [
-            { 
-              text: t('scanning.keepScanning'), 
+            {
+              text: t('scanning.keepScanning'),
               onPress: () => {
                 setShowLiveScanner(true);
                 // Reset states for next scan
@@ -1603,7 +1478,7 @@ export default function App() {
         );
       }
     } catch (error) {
-      console.error('❌ API Lookup error:', error);
+      console.error('❌ Product lookup error:', error);
       setShowLiveScanner(false);
       Alert.alert(t('common.error'), `${t('product.notFound')}: ${error.message}`, [
         { 
@@ -1660,28 +1535,15 @@ export default function App() {
   // Product Selling with Native Barcode Scanner - Button 2
   const handleProductSelling = async () => {
     try {
-      console.log('🔵 TEST: Sell button pressed');
-      console.log('🔵 TEST: Desktop URL:', desktopServerUrl);
-      console.log('🔵 TEST: Native scanner ready');
-      
-      // Check desktop server connection first
-      if (!desktopServerUrl) {
-        console.log('❌ TEST: No desktop server connection');
-        Alert.alert(
-          '❌ ' + t('common.error'),
-          t('desktop.notConnected'),
-          [{ text: t('common.ok') }]
-        );
-        return;
-      }
-      
-      // Native expo-camera scanning - always ready!
-      
+      console.log('🔵 Sell button pressed - cloud relay + local fallback enabled');
+
+      // No need to check desktop connection - ConnectionManager handles cloud relay + local fallback + queueing
+
       // Open live scanner
-      console.log('✅ TEST: Opening camera scanner...');
+      console.log('✅ Opening camera scanner...');
       setShowLiveScanner(true);
     } catch (error) {
-      console.error('❌ TEST: Product selling error:', error);
+      console.error('❌ Product selling error:', error);
       Alert.alert(t('common.error'), `${t('errors.cameraFailed')}: ${error.message}`);
     }
   };
@@ -1711,45 +1573,21 @@ export default function App() {
     setShowLiveScanner(true);
   };
 
-  // Sell product function
+  // Sell product function - uses ConnectionManager for cloud relay + local fallback + queueing
   const sellProduct = async (barcode, quantity, price, name) => {
     try {
       setIsProcessing(true);
       console.log(`💰 Selling product: ${barcode}, qty: ${quantity}, price: ${price}`);
-      
-      if (!desktopServerUrl) {
-        Alert.alert(
-          '❌ ' + t('common.error'),
-          t('desktop.notConnected'),
-          [{ text: t('common.ok') }]
-        );
-        setIsProcessing(false);
-        return;
-      }
-      
-      const response = await fetchWithTimeout(`${desktopServerUrl}/stock/sell`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          barcode: barcode || undefined,
-          name: name || undefined,
-          qty: quantity
-        })
+
+      // Use ConnectionManager for hybrid cloud+local+queue approach
+      const result = await ConnectionManager.submitSale({
+        barcode: barcode,
+        name: name,
+        quantity: quantity,
+        price: price
       });
-      
-      let result;
-      try {
-        result = await response.json();
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        throw new Error('Invalid response from server');
-      }
-      console.log('💰 Sale result:', result);
-      
-      if (response.ok && !result.error) {
+
+      if (result.success) {
         // Save to recent sales history
         await saveToRecentSales({
           productName: name,
@@ -1757,39 +1595,53 @@ export default function App() {
           quantity: quantity,
           unitPrice: price,
           total: price * quantity,
-          remainingStock: result.newStock || result.remainingStock
+          remainingStock: result.data?.newStock || result.data?.remainingStock
         });
 
-        Alert.alert(
-          t('selling.saleComplete'),
-          t('selling.saleSuccessDetails', {
+        // Show different messages based on delivery method
+        let message = '';
+        if (result.method === 'cloud_relay_delivered') {
+          message = t('selling.saleSuccessDetails', {
             quantity: quantity,
             name: name || t('modals.unknownProduct'),
             total: (price * quantity).toFixed(2),
-            stock: result.newStock || result.remainingStock || t('common.notAvailable')
-          })
+            stock: result.data?.newStock || result.data?.remainingStock || t('common.notAvailable')
+          }) + '\n\n☁️ ' + t('connection.viaCloudRelay');
+        } else if (result.method === 'cloud_relay_queued') {
+          message = `Sale recorded and queued in cloud. Desktop is offline - sale will sync when desktop comes online.\n\n` +
+                    `${quantity}x ${name || t('modals.unknownProduct')}\n` +
+                    `Total: ${(price * quantity).toFixed(2)} DZD`;
+        } else if (result.method === 'direct_local') {
+          message = t('selling.saleSuccessDetails', {
+            quantity: quantity,
+            name: name || t('modals.unknownProduct'),
+            total: (price * quantity).toFixed(2),
+            stock: result.data?.newStock || result.data?.remainingStock || t('common.notAvailable')
+          }) + '\n\n🏠 ' + t('connection.viaLocalNetwork');
+        } else if (result.method === 'local_queue') {
+          message = `Sale recorded and saved locally. No connection available - sale will sync when connection is restored.\n\n` +
+                    `${quantity}x ${name || t('modals.unknownProduct')}\n` +
+                    `Total: ${(price * quantity).toFixed(2)} DZD`;
+        }
+
+        Alert.alert(
+          t('selling.saleComplete'),
+          message
         );
       } else {
-        Alert.alert(t('selling.saleFailed'), t('selling.saleErrorDetails', { error: result.error || t('common.error') }));
-      }
-      
-    } catch (error) {
-      console.error('Sale error:', error);
-      
-      // Check if it's a network error
-      if (error.message && (error.message.includes('timeout') || error.message.includes('network'))) {
         Alert.alert(
           t('selling.saleFailed'),
-          t('errors.networkError') || 'Network error. Please check your connection and ensure the desktop app is running.',
-          [{ text: t('common.ok') }]
-        );
-      } else {
-        Alert.alert(
-          t('selling.saleFailed'), 
-          t('selling.saleErrorDetails', { error: error.message || 'Unknown error' }),
-          [{ text: t('common.ok') }]
+          result.error || t('selling.saleErrorDetails', { error: t('common.error') })
         );
       }
+
+    } catch (error) {
+      console.error('Sale error:', error);
+      Alert.alert(
+        t('selling.saleFailed'),
+        t('selling.saleErrorDetails', { error: error.message || 'Unknown error' }),
+        [{ text: t('common.ok') }]
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -1882,38 +1734,41 @@ export default function App() {
       console.log('📦 [HYBRID] Fetching inventory products...');
       
       // Try desktop server first (in-store scenario)
-      try {
-        console.log('📦 [HYBRID] Attempting desktop server connection...');
-        const desktopResponse = await fetchWithTimeout(`${desktopServerUrl}/products`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 8000  // 8 second timeout for desktop
-        });
-        
-        const desktopData = await desktopResponse.json();
-        console.log('✅ [HYBRID] Desktop inventory loaded:', desktopData.products?.length || 0, 'products');
-        
-        if (desktopData.products && Array.isArray(desktopData.products)) {
-          setInventoryProducts(desktopData.products);
-          return; // Success - use desktop data
+      if (!desktopServerUrl) {
+        console.log('[HYBRID] Desktop URL not configured; skipping direct inventory fetch.');
+      } else {
+        try {
+          console.log('📦 [HYBRID] Attempting desktop server connection...');
+          const desktopResponse = await fetchWithTimeout(`${desktopServerUrl}/products`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }, 8000);  // 8 second timeout for desktop
+
+          const desktopData = await desktopResponse.json();
+          console.log('✅ [HYBRID] Desktop inventory loaded:', desktopData.products?.length || 0, 'products');
+
+          if (desktopData.products && Array.isArray(desktopData.products)) {
+            setInventoryProducts(desktopData.products);
+            return; // Success - use desktop data
+          }
+        } catch (desktopError) {
+          console.log('⚠️ [HYBRID] Desktop server not available:', desktopError.message);
         }
-      } catch (desktopError) {
-        console.log('⚠️ [HYBRID] Desktop server not available:', desktopError.message);
       }
-      
+
       // Fallback to smart cloud inventory with auto-refresh
       console.log('☁️ [HYBRID] Falling back to smart cloud inventory...');
+      console.log('☁️ [HYBRID] Cloud URL:', INVOICE_SERVER_URL);
       try {
         // Use smart endpoint that handles caching and persistence
-        const cloudResponse = await fetch(`${INVOICE_SERVER_URL}/inventory/smart?forceRefresh=false`, {
+        const cloudResponse = await fetchWithTimeout(`${INVOICE_SERVER_URL}/inventory/smart?forceRefresh=false`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 15000  // 15 second timeout for cloud
-        });
+        }, 15000);  // 15 second timeout for cloud
         
         const cloudData = await cloudResponse.json();
         console.log('☁️ [HYBRID] Cloud cached inventory loaded:', cloudData.products?.length || 0, 'products');
@@ -2775,7 +2630,7 @@ export default function App() {
   // Show splash screen first
   if (showSplashScreen) {
     return (
-      <SplashScreen 
+      <SplashScreen
         onFinish={() => setShowSplashScreen(false)}
       />
     );
@@ -2833,48 +2688,6 @@ export default function App() {
           )}
         </View>
       </View>
-
-      {/* Manual Desktop IP Configuration */}
-      <View style={styles.manualIPContainer}>
-        <Text style={styles.manualIPLabel}>🖥️ Desktop IP Address:</Text>
-        <View style={styles.manualIPInputRow}>
-          <TextInput
-            style={styles.manualIPInput}
-            value={manualDesktopIP}
-            onChangeText={setManualDesktopIP}
-            placeholder="e.g. 10.121.189.86"
-            placeholderTextColor="#666"
-            keyboardType="decimal-pad"
-          />
-          <TouchableOpacity
-            style={[
-              styles.testButton,
-              isTestingConnection && styles.testButtonDisabled
-            ]}
-            onPress={testManualConnection}
-            disabled={isTestingConnection}
-          >
-            {isTestingConnection ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.testButtonText}>Test</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-        {manualDesktopIP.trim() && (
-          <Text style={styles.manualIPStatus}>
-            ✅ Will connect to: {manualDesktopIP.trim()}:4000
-          </Text>
-        )}
-      </View>
-
-      {/* Network Test Button */}
-      <TouchableOpacity
-        style={[styles.testButton, { marginHorizontal: 20, marginBottom: 10 }]}
-        onPress={() => setShowNetworkTest(true)}
-      >
-        <Text style={styles.testButtonText}>🔧 Network Test</Text>
-      </TouchableOpacity>
 
       {/* Dashboard Cards */}
       <ScrollView 
@@ -3568,7 +3381,7 @@ export default function App() {
           setServerUrls({ desktop: newUrl, invoice: INVOICE_SERVER_URL });
           setNetworkStatus('connected');
         }}
-      />*/
+      />*/}
 
       {/* Image Viewer Modal */}
       <Modal visible={showImageViewer} animationType="fade" presentationStyle="overFullScreen">
@@ -3650,23 +3463,6 @@ export default function App() {
         }}
       />
 
-      {/* Network Test Modal */}
-      <Modal
-        visible={showNetworkTest}
-        animationType="slide"
-        presentationStyle="formSheet"
-        onRequestClose={() => setShowNetworkTest(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ddd' }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Network Connectivity Test</Text>
-            <TouchableOpacity onPress={() => setShowNetworkTest(false)}>
-              <Text style={{ fontSize: 16, color: '#007AFF' }}>Close</Text>
-            </TouchableOpacity>
-          </View>
-          <NetworkTest />
-        </View>
-      </Modal>
     </LinearGradient>
   );
 }
@@ -6787,3 +6583,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+

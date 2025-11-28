@@ -7,6 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
+      },
       "android": {
         "gradleCommand": ":app:assembleDebug"
       },
@@ -16,6 +19,21 @@
         "buildConfiguration": "Debug"
       }
     },
+    "simulator": {
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Debug",
+        "resourceClass": "m-medium"
+      }
+    },
+    "minimal": {
+      "ios": {
+        "simulator": true,
+        "buildConfiguration": "Release",
+        "resourceClass": "m-medium",
+        "image": "latest"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "android": {
@@ -23,7 +41,7 @@
       },
       "ios": {
         "resourceClass": "m-medium",
-        "simulator": true
+        "simulator": false
       }
     },
     "production": {
@@ -32,11 +50,20 @@
       },
       "ios": {
         "resourceClass": "m-medium",
-        "autoIncrement": true
+        "autoIncrement": true,
+        "distribution": "store",
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "EAS_SKIP_AUTO_FINGERPRINT": "1"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6755611796"
+      }
+    }
   }
 }
