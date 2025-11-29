@@ -28,7 +28,9 @@ workflows:
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
-            --create
+            --create \
+            --certificate-key=@file:$CM_CERTIFICATE_PRIVATE_KEY \
+            || app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_DEVELOPMENT
       - name: Use signing profiles
         script: xcode-project use-profiles
       - name: Build iOS
