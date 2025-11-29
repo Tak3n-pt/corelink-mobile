@@ -9,8 +9,10 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
+      groups:
+        - app_store_credentials
       ios_signing:
-        distribution_type: ad_hoc
+        distribution_type: development
         bundle_identifier: com.corelink.inventory
     scripts:
       - name: Install dependencies
