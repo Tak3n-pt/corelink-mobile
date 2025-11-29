@@ -24,13 +24,17 @@ workflows:
         script: npx expo prebuild --platform ios --clean
       - name: Install CocoaPods
         script: cd ios && pod install
+      - name: Generate certificate key
+        script: |
+          # Generate RSA private key for certificate signing
+          ssh-keygen -t rsa -b 2048 -m PEM -f /tmp/cert_key -N ""
+          export CM_CERTIFICATE_PRIVATE_KEY=/tmp/cert_key
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_DEVELOPMENT \
             --create \
-            --certificate-key=@file:$CM_CERTIFICATE_PRIVATE_KEY \
-            || app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_DEVELOPMENT
+            --certificate-key=@file:/tmp/cert_key
       - name: Use signing profiles
         script: xcode-project use-profiles
       - name: Build iOS
