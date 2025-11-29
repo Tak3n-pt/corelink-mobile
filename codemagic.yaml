@@ -3,10 +3,15 @@ workflows:
     name: iOS Build
     max_build_duration: 60
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic_api_key
     environment:
       node: 20
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.corelink.inventory
     scripts:
       - name: Install dependencies
         script: npm ci
@@ -16,6 +21,8 @@ workflows:
         script: npx expo prebuild --platform ios --clean
       - name: Install CocoaPods
         script: cd ios && pod install
+      - name: Set up code signing
+        script: xcode-project use-profiles
       - name: Build iOS
         script: |
           cd ios
@@ -25,13 +32,10 @@ workflows:
             -sdk iphoneos \
             -archivePath build/CoreLink.xcarchive \
             archive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_STYLE=Manual
       - name: Create IPA
         script: |
-          mkdir -p Payload
-          cp -r ios/build/CoreLink.xcarchive/Products/Applications/CoreLink.app Payload/
-          zip -r CoreLink-unsigned.ipa Payload
+          xcode-project build-ipa --archive-path ios/build/CoreLink.xcarchive
     artifacts:
+      - build/ios/ipa/*.ipa
       - "*.ipa"
