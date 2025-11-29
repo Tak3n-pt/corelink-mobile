@@ -11,9 +11,6 @@ workflows:
       cocoapods: default
       groups:
         - app_store_credentials
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.corelink.inventory
       vars:
         BUNDLE_ID: "com.corelink.inventory"
         XCODE_WORKSPACE: "CoreLink.xcworkspace"
@@ -27,31 +24,15 @@ workflows:
         script: npx expo prebuild --platform ios --clean
       - name: Install CocoaPods
         script: cd ios && pod install
-      - name: Set up code signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_DEVELOPMENT || echo "Using automatic signing"
-          keychain add-certificates
-          xcode-project use-profiles || echo "Skipping profile setup"
-      - name: Build iOS
+      - name: Build iOS (unsigned for simulator/testing)
         script: |
           cd ios
+          # Build unsigned for testing purposes
           xcodebuild -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -sdk iphoneos \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8" \
-            -authenticationKeyID "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-            -archivePath build/CoreLink.xcarchive \
-            archive || \
-          xcodebuild -workspace "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             -archivePath build/CoreLink.xcarchive \
@@ -59,30 +40,11 @@ workflows:
       - name: Create IPA
         script: |
           mkdir -p build/ios/ipa
-          # Try signed export first, fallback to unsigned
-          cat > /tmp/ExportOptions.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>teamID</key>
-              <string>2R8F9ZVV2B</string>
-          </dict>
-          </plist>
-          EOF
-
-          xcodebuild -exportArchive \
-            -archivePath ios/build/CoreLink.xcarchive \
-            -exportPath build/ios/ipa \
-            -exportOptionsPlist /tmp/ExportOptions.plist \
-            -allowProvisioningUpdates || \
-          echo "Creating unsigned IPA..." && \
-          cd ios/build/CoreLink.xcarchive/Products/Applications && \
-          mkdir -p Payload && \
-          cp -r *.app Payload/ && \
-          zip -r ../../../../../build/ios/ipa/CoreLink-unsigned.ipa Payload
+          cd ios/build/CoreLink.xcarchive/Products/Applications
+          mkdir -p Payload
+          cp -r *.app Payload/
+          zip -r ../../../../../build/ios/ipa/CoreLink.ipa Payload
+          echo "IPA created at build/ios/ipa/CoreLink.ipa"
     artifacts:
       - build/ios/ipa/*.ipa
       - ios/build/*.ipa
