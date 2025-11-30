@@ -1,6 +1,6 @@
 workflows:
-  ios-build:
-    name: iOS Build
+  ios-testflight:
+    name: iOS TestFlight Build
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
@@ -9,6 +9,9 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.corelink.inventory
       groups:
         - app_store_credentials
       vars:
@@ -24,28 +27,30 @@ workflows:
         script: npx expo prebuild --platform ios --clean
       - name: Install CocoaPods
         script: cd ios && pod install
-      - name: Build iOS (unsigned for simulator/testing)
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Build iOS Archive
         script: |
           cd ios
-          # Build unsigned for testing purposes
           xcodebuild -workspace "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
             -archivePath build/CoreLink.xcarchive \
             archive
-      - name: Create IPA
+      - name: Export IPA for App Store
         script: |
-          mkdir -p build/ios/ipa
-          cd ios/build/CoreLink.xcarchive/Products/Applications
-          mkdir -p Payload
-          cp -r *.app Payload/
-          zip -r ../../../../../build/ios/ipa/CoreLink.ipa Payload
-          echo "IPA created at build/ios/ipa/CoreLink.ipa"
+          cd ios
+          xcodebuild -exportArchive \
+            -archivePath build/CoreLink.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist /tmp/ExportOptions.plist
     artifacts:
-      - build/ios/ipa/*.ipa
-      - ios/build/*.ipa
-      - "*.ipa"
+      - ios/build/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - "External Testers"
